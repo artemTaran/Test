@@ -15,8 +15,6 @@ type App struct {
 	showCounts   int
 }
 
-const t = 35
-
 var app = make([]App, 50)
 
 func main() {
@@ -66,18 +64,17 @@ func tomain() {
 	wg.Add(2)
 	defer wg.Done()
 	defer wg.Done()
-	go listUpdate(app)
+	go listUpdate()
 	go httpFunc()
 	wg.Wait()
 }
 
 //Рандомная замена элемента слайса
-func listUpdate(appl []App) {
+func listUpdate() {
 	for true {
 		apSize := randInt(0, 50)
 		app = append(app, app[apSize])
 		app[apSize].applications = randomString(2)
-		fmt.Println(app[t], app[len(app)-1])
 		app[apSize].showCounts = 0
 		time.Sleep(time.Millisecond * 200)
 	}
