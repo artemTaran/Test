@@ -1,0 +1,98 @@
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"net/http"
+	"sync"
+	"time"
+)
+
+//ab -n 10000 -c 10 http://localhost:8080/admin/request
+
+type App struct {
+	applications string
+	showCounts   int
+}
+
+const t = 35
+
+var app = make([]App, 50)
+
+func main() {
+	tomain()
+}
+
+func myHt() {
+	http.HandleFunc("/request", _request)
+	http.HandleFunc("/admin/requests", adminRequests)
+	http.ListenAndServe(":8080", nil)
+}
+
+func _request(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		randNumber := randInt(0, 50)
+		w.Write([]byte(fmt.Sprintf("%s", app[randNumber].applications)))
+		app[randNumber].showCounts++
+		return
+	}
+	return
+}
+
+func adminRequests(w http.ResponseWriter, r *http.Request) {
+	_, ok := w.(http.Flusher)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		for i := 0; i < len(app); i++ {
+			//w.WriteHeader(http.StatusOK) //superfluous response.WriteHeader call from main.adminRequests
+			w.Write([]byte(fmt.Sprintf("%s : %v\n", app[i].applications, app[i].showCounts)))
+		}
+		return
+	}
+	return
+}
+
+func tomain() {
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < len(app); i++ { //Инициализация заявок
+		app[i].applications = randomString(2)
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	defer wg.Done()
+	defer wg.Done()
+	go listUpdate(app)
+	go myHt()
+	wg.Wait()
+}
+
+//Рандомная замена элемента слайса
+func listUpdate(appl []App) {
+	for true {
+		apSize := randInt(0, 50)
+		app = append(app, app[apSize])
+		app[apSize].applications = randomString(2)
+		fmt.Println(app[t], app[len(app)-1])
+		app[apSize].showCounts = 0
+		time.Sleep(time.Millisecond * 200)
+	}
+}
+
+//Получение рандомной строки длинной 2 символа
+func randomString(l int) string {
+	bytes := make([]byte, l)
+	for i := 0; i < l; i++ {
+		bytes[i] = byte(randInt(97, 123))
+	}
+	return string(bytes)
+}
+
+//рандомное число в указаном диапазоне
+func randInt(min int, max int) int {
+	return min + rand.Intn(max-min)
+}
