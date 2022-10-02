@@ -23,7 +23,7 @@ func main() {
 	tomain()
 }
 
-func myHt() {
+func httpFunc() {
 	http.HandleFunc("/request", _request)
 	http.HandleFunc("/admin/requests", adminRequests)
 	http.ListenAndServe(":8080", nil)
@@ -67,7 +67,7 @@ func tomain() {
 	defer wg.Done()
 	defer wg.Done()
 	go listUpdate(app)
-	go myHt()
+	go httpFunc()
 	wg.Wait()
 }
 
