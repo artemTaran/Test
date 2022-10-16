@@ -8,75 +8,62 @@ import (
 	"time"
 )
 
-//ab -n 10000 -c 10 http://localhost:8080/admin/request
+var applications = make([]string, 50)
+var delAppCounts = make([]string, 50)
+var showCounts = make([]int, 50)
 
-type App struct {
-	applications string
-	showCounts   int
-}
-
-var app = make([]App, 50)
+//var applications [50]string
+//var delAppCounts [50]string
 
 func main() {
 	tomain()
 }
 
-func httpFunc() {
+func myHt() {
 	http.HandleFunc("/request", _request)
-	http.HandleFunc("/admin/requests", adminRequests)
+	http.HandleFunc("/admin/requests", _admin_requests)
 	http.ListenAndServe(":8080", nil)
 }
 
 func _request(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		randNumber := randInt(0, 50)
-		w.Write([]byte(fmt.Sprintf("%s", app[randNumber].applications)))
-		app[randNumber].showCounts++
-		return
-	}
-	return
+	randNumber := randInt(0, 50)
+	w.Write([]byte(fmt.Sprintf("%v", applications[randNumber])))
+	showCounts[randNumber]++
 }
 
-func adminRequests(w http.ResponseWriter, r *http.Request) {
-	_, ok := w.(http.Flusher)
-	if !ok {
-		http.NotFound(w, r)
-		return
+func _admin_requests(w http.ResponseWriter, r *http.Request) {
+
+	for range applications {
+		w.Write([]byte(fmt.Sprintf("%v", applications)))
 	}
-	switch r.Method {
-	case http.MethodGet:
-		for i := 0; i < len(app); i++ {
-			//w.WriteHeader(http.StatusOK) //superfluous response.WriteHeader call from main.adminRequests
-			w.Write([]byte(fmt.Sprintf("%s : %v\n", app[i].applications, app[i].showCounts)))
-		}
-		return
-	}
-	return
+
+	w.Write([]byte(fmt.Sprintf("%v", applications)))
 }
 
 func tomain() {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < len(app); i++ { //Инициализация заявок
-		app[i].applications = randomString(2)
+	for i := 0; i < len(applications); i++ { //Инициализация заявок
+		applications[i] = randomString(2)
+		delAppCounts[i] = applications[i]
 	}
 	var wg sync.WaitGroup
 	wg.Add(2)
 	defer wg.Done()
 	defer wg.Done()
-	go listUpdate()
-	go httpFunc()
+	go listUpdate(applications)
+	go myHt()
 	wg.Wait()
 }
 
 //Рандомная замена элемента слайса
-func listUpdate() {
+func listUpdate(applications []string) {
 	for true {
 		apSize := randInt(0, 50)
-		app = append(app, app[apSize])
-		app[apSize].applications = randomString(2)
-		app[apSize].showCounts = 0
+		(applications)[apSize] = randomString(2)
+		delAppCounts = append(delAppCounts, applications[apSize]) //добавление удалённого элемента в отдельный слайс
 		time.Sleep(time.Millisecond * 200)
+		//fmt.Println(applications)
+		fmt.Println(delAppCounts)
 	}
 }
 
